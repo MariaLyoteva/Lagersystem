@@ -5,9 +5,25 @@
 #include<map>
 #include<string>
 #include<algorithm>
-
+#include <limits>
 
 using namespace std;
+
+#include <stdexcept>
+
+class IdAlreadyExistsException : public std::runtime_error {
+public:
+    IdAlreadyExistsException(const std::string& message) : std::runtime_error(message) {}
+};
+
+class InvalidCustomerIdFormatException : public std::runtime_error {
+public:
+    InvalidCustomerIdFormatException(const std::string& message) : std::runtime_error(message) {}
+};
+class InvalidCustomerFormatException : public std::runtime_error {
+public:
+    InvalidCustomerFormatException(const std::string& message) : std::runtime_error(message) {}
+};
 //--------------------Products------------------//
 class Produkt{
 public:
@@ -20,6 +36,9 @@ public:
 
     string getTitel() const {
         return titel;
+    }
+    void setTitel(const string& newTitel) {
+        titel = newTitel;
     }
 
     virtual string toString() const = 0;
@@ -44,7 +63,7 @@ public:
 
     int getLaufzeit(){
         return laufzeit;
-     }
+    }
 
     string toString() const override {
         return "DVD " + to_string(produktId) + " " + titel + " " + to_string(laufzeit);
@@ -154,13 +173,20 @@ public:
     std::map<int, Lager> lagerbestand;       // Map productID to StockLevel
 
     void addCustomer(const Kunde& customer) {
+
+        int customerId = customer.getKundenId();
+
+        if (customers.find(customerId) != customers.end()) {
+            throw IdAlreadyExistsException("Customer with ID " + to_string(customerId) + " already exists.");
+        }
+
         customers.insert(std::make_pair(customer.getKundenId(), customer));
     }
 
     void addProdukt(Produkt* produkt) {
         int productId = produkt->getProduktId();
         if (produktkatalog.find(productId) != produktkatalog.end()) {
-            throw runtime_error("Produkt with ID " + to_string(productId) + " already exists.");
+            throw IdAlreadyExistsException("Produkt with ID " + to_string(productId) + " already exists.");
         }
         produktkatalog.insert(std::make_pair(productId, produkt));
     }
@@ -173,6 +199,15 @@ public:
     void printProduktkatalog() const {
         for (const auto& pair : produktkatalog) {
             cout << *(pair.second) << endl;
+        }
+    }
+
+    void printLagerbestand() const {
+        for (const auto& pair : lagerbestand) {
+            int produktId = pair.first;
+            const Produkt* produkt = produktkatalog.at(produktId);
+            const Lager& lager = pair.second;
+            cout << "Lager " << produktId << " " << produkt->getTitel() << " " << lager.getAnzahl() << endl;
         }
     }
 
@@ -199,6 +234,7 @@ public:
         }
 
         string line;
+        int lineNum = 1; // Keep track of the line number for error reporting
         while (getline(file, line)) {
             if (line.empty())
                 continue;
@@ -212,6 +248,12 @@ public:
                     int kundenId;
                     string name, vorname, adresse, hausnummer, postleitzahl, ort;
                     iss >> kundenId >> name >> vorname >> adresse >> hausnummer >> postleitzahl >> ort;
+                    if (!iss || iss.fail()) {
+                        throw InvalidCustomerFormatException("Invalid customer format at line " + to_string(lineNum));
+                    }
+                    if (kundenId < 0 || kundenId > std::numeric_limits<int>::max()) {
+                        throw InvalidCustomerIdFormatException("Invalid customer ID format at line " + to_string(lineNum));
+                    }
                     lagersystem.addCustomer(Kunde(kundenId, name, vorname, adresse, hausnummer, postleitzahl, ort));
                 } else if (category == "DVD") {
                     int produktId, laufzeit;
@@ -232,17 +274,24 @@ public:
                 } else {
                     throw runtime_error("Ungültige Kategorie: " + category);
                 }
+            } catch (const IdAlreadyExistsException& e) {
+                cerr << "Fehler beim Verarbeiten der Zeile " << lineNum << ": " << e.what() << endl;
+            } catch (const InvalidCustomerIdFormatException& e) {
+                cerr << "Fehler beim Verarbeiten der Zeile " << lineNum << ": " << e.what() << endl;
+            } catch (const InvalidCustomerFormatException& e) {
+                cerr << "Fehler beim Verarbeiten der Zeile " << lineNum << ": " << e.what() << endl;
             } catch (const exception& e) {
-                cerr << "Fehler beim Verarbeiten der Zeile: " << line << endl;
+            } catch (const exception& e) {
+                cerr << "Fehler beim Verarbeiten der Zeile " << lineNum << ": " << line << endl;
                 cerr << e.what() << endl;
             }
+
+            lineNum++; // Move to the next line
         }
 
         file.close();
     }
-    void replaceSpacesWithUnderscores(string& str) const {
-        std::replace(str.begin(), str.end(), ' ', '_');
-    }
+
 
     void exportToFile(const string& filename) const {
         ofstream file(filename);
@@ -254,7 +303,7 @@ public:
         for (const auto& pair : lagersystem.customers) {
             file << pair.second.toString() << endl;
         }
-
+        file<<endl;
         for (const auto& pair : lagersystem.produktkatalog) {
             Produkt* produkt = pair.second;
             int produktId = produkt->getProduktId();
@@ -262,20 +311,33 @@ public:
 
             // Replace spaces with underscores before export
             replaceSpacesWithUnderscores(titel);
-            file << *(pair.second) << endl;
+            produkt->setTitel(titel);
 
-            // Check if the key exists in lagerbestand map
+            file << *(pair.second);
+        }
+         file<<endl;
+        for (const auto& pair : lagersystem.produktkatalog) {
+            int produktId = pair.first;
+            const Produkt* produkt = pair.second;
             auto lagerIter = lagersystem.lagerbestand.find(produktId);
             if (lagerIter != lagersystem.lagerbestand.end()) {
                 const Lager& lager = lagerIter->second;
-                file << "Lager " << produktId << " " << titel << " " << lager.getAnzahl() << endl;
-            } else {
-                // Handle the case when Lager data is missing for a product
-                file << "Lager " << produktId << " " << titel << " 0" << endl; // Assuming default value is 0
+                file << "Lager " << produktId << " " << " " << lager.getAnzahl() << endl;
             }
         }
 
         file.close();
+    }
+
+
+
+public:
+    void replaceSpacesWithUnderscores(string& str) const {
+        std::replace(str.begin(), str.end(), ' ', '_');
+    }
+
+    void replaceUnderscoresWithSpaces(string& str) const {
+        std::replace(str.begin(), str.end(), '_', ' ');
     }
 
 };
@@ -284,9 +346,13 @@ int main() {
     Lagersystem lagersystem;
     FileHandler fileHandler(lagersystem);
 
-    fileHandler.readFromFile("C:\\Users\\maria\\CLionProjects\\untitled2\\acme.load");
+    try {
+        fileHandler.readFromFile("C:\\Users\\maria\\CLionProjects\\untitled2\\acme.load");
+    } catch (const IdAlreadyExistsException& e) {
+        cerr << "Error: " << e.what() << endl;
+    }
 
-   // lagersystem.printKunde();
+    lagersystem.printKunde();
     lagersystem.printProduktkatalog();
     //lagersystem.printLagerbestand();
 
