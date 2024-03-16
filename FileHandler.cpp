@@ -1,11 +1,14 @@
 #include "FileHandler.h"
 
 
-FileHandler::FileHandler(Lagersystem & lagersystem): lagersystem(lagersystem) {}
+#include "FileHandler.h"
+#include <fstream>
+#include <sstream>
 
-//Reads the iput from the file
+FileHandler::FileHandler(std::shared_ptr<Lagersystem> lagersystem)
+        : lagersystem(lagersystem) {}
 
-void FileHandler::readFromFile(const std::string & filename) {
+void FileHandler::readFromFile(const std::string &filename) {
     std::ifstream file(filename);
     if (!file) {
         std::cerr << "Fehler beim Öffnen der Datei." << std::endl;
@@ -32,36 +35,38 @@ void FileHandler::readFromFile(const std::string & filename) {
                     throw InvalidCustomerFormatException("Invalid customer format at line " + std::to_string(lineNum));
                 }
                 //Check if the customerId is valid
-                if (kundenId < 0 || kundenId > std::numeric_limits < int > ::max()) {
-                    throw InvalidCustomerIdFormatException("Invalid customer ID format at line " + std::to_string(lineNum));
+                if (kundenId < 0 || kundenId > std::numeric_limits<int>::max()) {
+                    throw InvalidCustomerIdFormatException(
+                            "Invalid customer ID format at line " + std::to_string(lineNum));
                 }
-                lagersystem.addCustomer(Kunde(kundenId, name, vorname, adresse, hausnummer, postleitzahl, ort));
+                lagersystem->addCustomer(
+                        std::make_shared<Kunde>(kundenId, name, vorname, adresse, hausnummer, postleitzahl, ort));
             } else if (category == "DVD") {
                 int produktId, laufzeit;
                 std::string titel;
                 iss >> produktId >> titel >> laufzeit;
-                replaceUnderscoresWithSpaces(titel); //replaces the _ with an empty space
-                lagersystem.addProdukt(new DVD(produktId, titel, laufzeit));
+                replaceUnderscoresWithSpaces(titel); // replaces the _ with an empty space
+                lagersystem->addProdukt(std::make_shared<DVD>(produktId, titel, laufzeit));
             } else if (category == "Bluray") {
                 int produktId, anzahlTracks;
                 std::string titel, aufloesung;
                 iss >> produktId >> titel >> anzahlTracks >> aufloesung;
-                replaceUnderscoresWithSpaces(titel); //replaces the _ with an empty space
-                lagersystem.addProdukt(new Bluray(produktId, titel, anzahlTracks, aufloesung));
+                replaceUnderscoresWithSpaces(titel); // replaces the _ with an empty space
+                lagersystem->addProdukt(std::make_shared<Bluray>(produktId, titel, anzahlTracks, aufloesung));
             } else if (category == "Lager") {
                 int produktId, anzahl;
                 iss >> produktId >> anzahl;
-                lagersystem.addLagerbestand(produktId, Lager(anzahl));
+                lagersystem->addLagerbestand(produktId, Lager(anzahl));
             } else {
                 throw std::runtime_error("Ungültige Kategorie: " + category);
             }
-        } catch (const IdAlreadyExistsException & e) {
+        } catch (const IdAlreadyExistsException &e) {
             errorMessages.push_back("Fehler beim Verarbeiten der Zeile " + std::to_string(lineNum) + ": " + e.what());
-        } catch (const InvalidCustomerIdFormatException & e) {
+        } catch (const InvalidCustomerIdFormatException &e) {
             errorMessages.push_back("Fehler beim Verarbeiten der Zeile " + std::to_string(lineNum) + ": " + e.what());
-        } catch (const InvalidCustomerFormatException & e) {
+        } catch (const InvalidCustomerFormatException &e) {
             errorMessages.push_back("Fehler beim Verarbeiten der Zeile " + std::to_string(lineNum) + ": " + e.what());
-        } catch (const std::exception & e) {
+        } catch (const std::exception &e) {
             errorMessages.push_back("Fehler beim Verarbeiten der Zeile " + std::to_string(lineNum) + ": " + line);
             errorMessages.push_back(e.what());
         }
@@ -72,26 +77,27 @@ void FileHandler::readFromFile(const std::string & filename) {
     file.close();
 }
 
-void FileHandler::exportToFile(const std::string & filename) const {
+void FileHandler::exportToFile(const std::string &filename) const {
     std::ofstream file(filename);
     if (!file) {
         std::cerr << "Fehler beim Öffnen der Datei zum Exportieren." << std::endl;
         return;
     }
 
-    std::string allData = lagersystem.getAllAsString();
+    std::string allData = lagersystem->getAllAsString();
     file << allData;
 
     file.close();
 }
 
-void FileHandler::replaceUnderscoresWithSpaces(std::string & str) const {
+void FileHandler::replaceUnderscoresWithSpaces(std::string &str) const {
     replace(str.begin(), str.end(), '_', ' ');
 }
 
 void FileHandler::printErrorMessages() const {
     // Prints all the error messages at the end
-    for (const std::string & errorMessage: errorMessages) {
+    for (const std::string &errorMessage: errorMessages) {
         std::cerr << errorMessage << std::endl;
     }
 }
+
