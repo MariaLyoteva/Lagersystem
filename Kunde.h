@@ -1,4 +1,7 @@
+#pragma once
+
 #include <string>
+
 //the client class and all the methods
 class Kunde {
 private:
@@ -11,8 +14,8 @@ private:
     std::string ort;
 
 public:
-    Kunde(int id, const std::string& name, const std::string& vorname, const std::string& adresse,
-          const std::string& hausnummer, const std::string& postleitzahl, const std::string& ort)
+    Kunde(int id, const std::string &name, const std::string &vorname, const std::string &adresse,
+          const std::string &hausnummer, const std::string &postleitzahl, const std::string &ort)
             : kundenId(id), name(name), vorname(vorname), adresse(adresse),
               hausnummer(hausnummer), postleitzahl(postleitzahl), ort(ort) {}
 
@@ -47,4 +50,4 @@ public:
     std::string toString() const;
 };
 
-#endif // KUNDE_H
+
