@@ -1,15 +1,15 @@
-#ifndef PRODUKT_H
-#define PRODUKT_H
+#pragma once
 
 #include <iostream>
 #include <string>
 
+//Product as parent class
 class Produkt {
 public:
-    Produkt(int id, const std::string& titel)
+    Produkt(int id, const std::string &titel)
             : produktId(id), titel(titel) {}
 
-    int getProduktId() {
+    int getProduktId() const {
         return produktId;
     }
 
@@ -17,19 +17,18 @@ public:
         return titel;
     }
 
-    void setTitel(const std::string& newTitel) {
+    void setTitel(const std::string &newTitel) {
         titel = newTitel;
     }
 
     virtual std::string toString() const = 0;
 
-    friend std::ostream& operator<<(std::ostream& os, const Produkt& produkt);
+    friend std::ostream &operator<<(std::ostream &os, const Produkt &produkt);
 
 protected:
     int produktId;
     std::string titel;
 };
 
-std::ostream& operator<<(std::ostream& os, const Produkt& produkt);
+std::ostream &operator<<(std::ostream &os, const Produkt &produkt);
 
-#endif // PRODUKT_H
