@@ -15,11 +15,6 @@ Lagersystem is a C++ project designed to manage inventory systems. It provides f
 - **Produkt.cpp / Produkt.h**: Implementation and definitions for the product class.
 - **main.cpp**: Main entry point for the application.
 
-## Installation
-
-To clone the repository, use the following command:
-```bash
-git clone https://github.com/MariaLyoteva/Lagersystem.git
 
 ##License
 All rights reserved.
