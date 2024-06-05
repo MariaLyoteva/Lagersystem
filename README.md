@@ -16,5 +16,5 @@ Lagersystem is a C++ project designed to manage inventory systems. It provides f
 - **main.cpp**: Main entry point for the application.
 
 
-##License
+## License
 All rights reserved.
