@@ -20,3 +20,6 @@ Lagersystem is a C++ project designed to manage inventory systems. It provides f
 To clone the repository, use the following command:
 ```bash
 git clone https://github.com/MariaLyoteva/Lagersystem.git
+
+##License
+All rights reserved.
